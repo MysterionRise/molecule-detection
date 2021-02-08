@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SimpleTest {
 
-    Indigo indigo;
+    static Indigo indigo;
 
     @BeforeAll
     static void setUp() {
