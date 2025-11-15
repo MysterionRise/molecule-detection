@@ -85,9 +85,33 @@ curl -X POST http://localhost:8000/api/image-to-structure \
 
 ### Running Tests
 
+**All tests (backend + frontend):**
 ```bash
 make test
 ```
+
+**Or run the comprehensive test script:**
+```bash
+./run-tests.sh
+```
+
+**Backend only:**
+```bash
+cd backend
+python -m pytest -v --cov=app --cov-report=term-missing
+```
+
+**Frontend only:**
+```bash
+cd frontend
+pnpm test --run  # Single run
+pnpm test        # Watch mode
+```
+
+**Test Coverage:**
+- Backend: 85% coverage (137 statements, 20 missed)
+- Frontend: 3 tests passing
+- Coverage reports: `backend/htmlcov/index.html`
 
 ### Code Formatting
 
