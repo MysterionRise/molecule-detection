@@ -1,5 +1,10 @@
 # ChemVision
 
+[![CI](https://github.com/MysterionRise/molecule-detection/actions/workflows/ci.yml/badge.svg?branch=claude/repo-analysis-ml-summary-01E6TifCxWcfkbBQ8dtCR3Kc)](https://github.com/MysterionRise/molecule-detection/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Node 20+](https://img.shields.io/badge/node-20+-green.svg)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 > Production-quality web application for molecular structure recognition and chemical nomenclature conversion
 
 ChemVision combines optical chemical structure recognition (OCSR) with bidirectional IUPAC name-structure conversion in an elegant, accessible web interface.
@@ -124,6 +129,28 @@ make fmt
 ```bash
 make lint
 ```
+
+### Continuous Integration (CI)
+
+All changes are automatically tested via GitHub Actions.
+
+**CI Workflow** runs on every push and PR:
+- Backend: ruff, mypy, pytest (Python 3.11)
+- Frontend: ESLint, vitest, build (Node 20)
+- Docker: Build verification for both services
+
+**Check CI status before pushing:**
+```bash
+./ci-check.sh
+```
+
+**View CI results:**
+- GitHub Actions tab: [CI Workflow](https://github.com/MysterionRise/molecule-detection/actions/workflows/ci.yml)
+- Status badge at top of README
+
+**CI Documentation**: See [.github/CI.md](./.github/CI.md) for detailed workflow information.
+
+**Typical CI runtime**: 5-7 minutes (jobs run in parallel)
 
 ## Architecture
 
