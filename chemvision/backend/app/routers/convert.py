@@ -135,7 +135,9 @@ async def image_to_structure(image: UploadFile = File(...)) -> StructureResponse
     Phase 1: Not implemented (returns 501).
     Phase 2: Will use baseline image-to-sequence model.
     """
-    logger.info("image_to_structure_request", filename=image.filename, content_type=image.content_type)
+    logger.info(
+        "image_to_structure_request", filename=image.filename, content_type=image.content_type
+    )
 
     # Validate content type
     if image.content_type not in ["image/png", "image/jpeg", "image/jpg"]:
