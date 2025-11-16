@@ -10,8 +10,8 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
   },
   resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('.', import.meta.url)),
-    },
+    alias: [
+      { find: /^@\//, replacement: `${fileURLToPath(new URL('./', import.meta.url))}/` },
+    ],
   },
 })
