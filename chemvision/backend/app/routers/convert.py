@@ -20,7 +20,9 @@ router = APIRouter()
 
 def _get_correlation_id() -> str:
     """Get current correlation ID from context."""
-    return structlog.contextvars.get_contextvars().get("correlation_id", str(uuid.uuid4()))
+    ctx_vars = structlog.contextvars.get_contextvars()
+    correlation_id = ctx_vars.get("correlation_id")
+    return str(correlation_id) if correlation_id is not None else str(uuid.uuid4())
 
 
 def _not_implemented_error(operation: str) -> HTTPException:
