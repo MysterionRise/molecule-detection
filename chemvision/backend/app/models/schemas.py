@@ -1,6 +1,6 @@
 """Pydantic models for request/response validation."""
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -18,7 +18,7 @@ class ErrorResponse(BaseModel):
 
     error_code: str = Field(description="Machine-readable error code")
     message: str = Field(description="Human-readable error message")
-    details: Optional[dict] = Field(default=None, description="Additional error details")
+    details: dict | None = Field(default=None, description="Additional error details")
     correlation_id: str = Field(description="Request correlation ID for tracking")
 
 

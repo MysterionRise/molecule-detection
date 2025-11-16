@@ -1,9 +1,7 @@
 """Optical Chemical Structure Recognition (OCSR) service."""
 
-from typing import Union
 
-
-def image_to_smiles(image_bytes: bytes) -> Union[str, type[NotImplemented]]:
+def image_to_smiles(image_bytes: bytes) -> str | type[NotImplemented]:
     """
     Extract SMILES notation from a molecular structure image.
 

@@ -78,7 +78,7 @@ async def name_to_structure(request: NameToStructureRequest) -> StructureRespons
                 "message": f"Failed to convert name to structure: {str(e)}",
                 "correlation_id": _get_correlation_id(),
             },
-        )
+        ) from e
 
 
 @router.post(
@@ -118,7 +118,7 @@ async def structure_to_name(request: StructureToNameRequest) -> NameResponse:
                 "message": f"Failed to convert structure to name: {str(e)}",
                 "correlation_id": _get_correlation_id(),
             },
-        )
+        ) from e
 
 
 @router.post(
@@ -171,4 +171,4 @@ async def image_to_structure(image: UploadFile = File(...)) -> StructureResponse
                 "message": f"Failed to convert image to structure: {str(e)}",
                 "correlation_id": _get_correlation_id(),
             },
-        )
+        ) from e

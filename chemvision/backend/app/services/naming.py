@@ -1,7 +1,5 @@
 """Chemical naming service for IUPAC <-> SMILES conversion."""
 
-from typing import Union
-
 # Phase 1: Single demo mapping for testing
 DEMO_MAPPINGS = {
     "isopentane": "CC(C)CC",
@@ -9,7 +7,7 @@ DEMO_MAPPINGS = {
 }
 
 
-def name_to_smiles(name: str) -> Union[str, type[NotImplemented]]:
+def name_to_smiles(name: str) -> str | type[NotImplemented]:
     """
     Convert IUPAC chemical name to SMILES notation.
 
@@ -30,7 +28,7 @@ def name_to_smiles(name: str) -> Union[str, type[NotImplemented]]:
     return NotImplemented
 
 
-def smiles_to_name(smiles: str) -> Union[str, type[NotImplemented]]:
+def smiles_to_name(smiles: str) -> str | type[NotImplemented]:
     """
     Convert SMILES notation to IUPAC chemical name.
 
