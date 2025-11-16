@@ -1,11 +1,6 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
-import path from 'path'
-import { fileURLToPath } from 'url'
-
-// __dirname is not available in ES modules
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+import { fileURLToPath, URL } from 'url'
 
 export default defineConfig({
   plugins: [react()],
@@ -16,7 +11,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, '.'),
+      '@': fileURLToPath(new URL('.', import.meta.url)),
     },
   },
 })
