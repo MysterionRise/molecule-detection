@@ -60,7 +60,7 @@ async def name_to_structure(request: NameToStructureRequest) -> StructureRespons
     try:
         smiles = naming.name_to_smiles(request.name)
 
-        if smiles is NotImplemented:
+        if smiles is None:
             raise _not_implemented_error("Name to structure conversion")
 
         logger.info("name_to_structure_success", name=request.name, smiles=smiles)
@@ -100,7 +100,7 @@ async def structure_to_name(request: StructureToNameRequest) -> NameResponse:
     try:
         name = naming.smiles_to_name(request.smiles)
 
-        if name is NotImplemented:
+        if name is None:
             raise _not_implemented_error("Structure to name conversion")
 
         logger.info("structure_to_name_success", smiles=request.smiles, name=name)
@@ -155,7 +155,7 @@ async def image_to_structure(image: UploadFile = File(...)) -> StructureResponse
 
         smiles = ocsr.image_to_smiles(image_bytes)
 
-        if smiles is NotImplemented:
+        if smiles is None:
             raise _not_implemented_error("Image to structure conversion (OCSR)")
 
         logger.info("image_to_structure_success", filename=image.filename, smiles=smiles)
