@@ -1,0 +1,18 @@
+# Default owners for everything
+* @MysterionRise
+
+# Backend Python code
+/backend/ @MysterionRise
+
+# Frontend TypeScript code
+/frontend/ @MysterionRise
+
+# ML code
+/ml/ @MysterionRise
+
+# CI/CD
+/.github/ @MysterionRise
+
+# Documentation
+/ADRs/ @MysterionRise
+README.md @MysterionRise
