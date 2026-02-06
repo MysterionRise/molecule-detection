@@ -110,9 +110,7 @@ class TestEndpointExceptionHandling:
 
     def test_name_to_structure_handles_service_error(self, client: TestClient) -> None:
         """Test name-to-structure handles service errors gracefully."""
-        with patch(
-            "app.services.naming.name_to_smiles", side_effect=ValueError("Invalid input")
-        ):
+        with patch("app.services.naming.name_to_smiles", side_effect=ValueError("Invalid input")):
             response = client.post(
                 "/api/name-to-structure",
                 json={"name": "test"},
@@ -123,9 +121,7 @@ class TestEndpointExceptionHandling:
 
     def test_structure_to_name_handles_service_error(self, client: TestClient) -> None:
         """Test structure-to-name handles service errors gracefully."""
-        with patch(
-            "app.services.naming.smiles_to_name", side_effect=ValueError("Invalid SMILES")
-        ):
+        with patch("app.services.naming.smiles_to_name", side_effect=ValueError("Invalid SMILES")):
             response = client.post(
                 "/api/structure-to-name",
                 json={"smiles": "CC"},
