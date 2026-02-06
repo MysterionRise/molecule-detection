@@ -31,6 +31,7 @@ dev = [
     "httpx>=0.26.0",
     "ruff>=0.1.9",
     "mypy>=1.8.0",
+    "bandit[toml]>=1.7.7",
 ]
 
 [tool.setuptools.packages.find]
@@ -56,6 +57,7 @@ source = ["app"]
 omit = ["app/tests/*"]
 
 [tool.coverage.report]
+fail_under = 80
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
@@ -98,3 +100,7 @@ plugins = ["pydantic.mypy"]
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+
+[tool.bandit]
+exclude_dirs = ["app/tests"]
+skips = []

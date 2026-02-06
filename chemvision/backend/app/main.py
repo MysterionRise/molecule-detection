@@ -1,13 +1,13 @@
 """FastAPI application entrypoint."""
 
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from app.core.config import settings
 from app.models.schemas import ErrorResponse, HealthResponse
@@ -56,7 +56,9 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def add_correlation_id(request: Request, call_next):  # type: ignore
+async def add_correlation_id(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     """Add correlation ID to all requests."""
     correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
     structlog.contextvars.clear_contextvars()

@@ -7,6 +7,10 @@ RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user for security
+RUN groupadd --gid 1000 chemvision && \
+    useradd --uid 1000 --gid chemvision --shell /bin/bash --create-home chemvision
+
 # Copy dependency files
 COPY pyproject.toml ./
 
@@ -16,6 +20,12 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy application code
 COPY app ./app
+
+# Change ownership to non-root user
+RUN chown -R chemvision:chemvision /app
+
+# Switch to non-root user
+USER chemvision
 
 # Expose port
 EXPOSE 8000

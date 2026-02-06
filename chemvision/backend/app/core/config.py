@@ -17,10 +17,11 @@ class Settings(BaseSettings):
     environment: str = Field(default="development", description="Environment name")
     log_level: str = Field(default="INFO", description="Logging level")
 
-    # CORS
+    # CORS - use JSON array format in environment variable
+    # Example: CORS_ORIGINS='["http://localhost:3000", "http://example.com"]'
     cors_origins: list[str] = Field(
         default=["http://localhost:3000", "http://frontend:3000"],
-        description="Allowed CORS origins",
+        description="Allowed CORS origins (JSON array format)",
     )
 
     # API
