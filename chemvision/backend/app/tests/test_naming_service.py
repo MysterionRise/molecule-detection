@@ -1,7 +1,5 @@
 """Unit tests for the naming service."""
 
-import pytest
-
 from app.services.naming import DEMO_MAPPINGS, name_to_smiles, smiles_to_name
 
 

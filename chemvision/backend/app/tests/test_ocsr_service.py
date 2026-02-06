@@ -44,7 +44,7 @@ class TestImageToSmiles:
     def test_function_signature_accepts_bytes(self) -> None:
         """Test that function accepts bytes type."""
         # Type check - should not raise
-        result = image_to_smiles(bytes())
+        result = image_to_smiles(b"")
         assert result is None
 
     def test_returns_none_consistently(self) -> None:
