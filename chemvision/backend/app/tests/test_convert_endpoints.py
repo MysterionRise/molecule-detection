@@ -118,7 +118,6 @@ class TestImageToStructure:
         error = data["detail"]
         assert error["error_code"] == "INVALID_IMAGE_TYPE"
 
-
     def test_file_too_large_returns_413(self, client: TestClient) -> None:
         """Test that files exceeding max upload size return 413."""
         # Create a PNG that exceeds 10MB (the default max_upload_size)
