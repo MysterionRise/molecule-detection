@@ -6,6 +6,9 @@ import { cn } from '@/lib/utils'
 interface TabsContextValue {
   value: string
   onValueChange: (value: string) => void
+  baseId: string
+  tabValues: string[]
+  registerTab: (value: string) => void
 }
 
 const TabsContext = React.createContext<TabsContextValue | undefined>(undefined)
@@ -19,11 +22,17 @@ const Tabs = React.forwardRef<
   }
 >(({ className, value: controlledValue, defaultValue, onValueChange, ...props }, ref) => {
   const [internalValue, setInternalValue] = React.useState(defaultValue || '')
+  const [tabValues, setTabValues] = React.useState<string[]>([])
   const value = controlledValue ?? internalValue
   const handleValueChange = onValueChange ?? setInternalValue
+  const baseId = React.useId()
+
+  const registerTab = React.useCallback((tabValue: string) => {
+    setTabValues((prev) => (prev.includes(tabValue) ? prev : [...prev, tabValue]))
+  }, [])
 
   return (
-    <TabsContext.Provider value={{ value, onValueChange: handleValueChange }}>
+    <TabsContext.Provider value={{ value, onValueChange: handleValueChange, baseId, tabValues, registerTab }}>
       <div ref={ref} className={cn('', className)} {...props} />
     </TabsContext.Provider>
   )
@@ -34,6 +43,7 @@ const TabsList = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
+      role="tablist"
       className={cn(
         'inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground',
         className
@@ -52,16 +62,53 @@ const TabsTrigger = React.forwardRef<
   if (!context) throw new Error('TabsTrigger must be used within Tabs')
 
   const isActive = context.value === value
+  const { registerTab } = context
+
+  React.useEffect(() => {
+    registerTab(value)
+  }, [value, registerTab])
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    const { tabValues, onValueChange } = context
+    const currentIndex = tabValues.indexOf(value)
+    if (currentIndex === -1) return
+
+    let nextIndex: number | null = null
+    if (e.key === 'ArrowRight') {
+      nextIndex = (currentIndex + 1) % tabValues.length
+    } else if (e.key === 'ArrowLeft') {
+      nextIndex = (currentIndex - 1 + tabValues.length) % tabValues.length
+    } else if (e.key === 'Home') {
+      nextIndex = 0
+    } else if (e.key === 'End') {
+      nextIndex = tabValues.length - 1
+    }
+
+    if (nextIndex !== null) {
+      e.preventDefault()
+      onValueChange(tabValues[nextIndex])
+      // Focus the newly activated tab
+      const tabId = `${context.baseId}-tab-${tabValues[nextIndex]}`
+      const nextTab = document.getElementById(tabId)
+      nextTab?.focus()
+    }
+  }
 
   return (
     <button
       ref={ref}
+      id={`${context.baseId}-tab-${value}`}
+      role="tab"
+      aria-selected={isActive}
+      aria-controls={`${context.baseId}-panel-${value}`}
+      tabIndex={isActive ? 0 : -1}
       className={cn(
         'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
         isActive && 'bg-background text-foreground shadow-sm',
         className
       )}
       onClick={() => context.onValueChange(value)}
+      onKeyDown={handleKeyDown}
       {...props}
     />
   )
@@ -80,6 +127,10 @@ const TabsContent = React.forwardRef<
   return (
     <div
       ref={ref}
+      id={`${context.baseId}-panel-${value}`}
+      role="tabpanel"
+      aria-labelledby={`${context.baseId}-tab-${value}`}
+      tabIndex={0}
       className={cn(
         'mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
         className

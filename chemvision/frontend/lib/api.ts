@@ -2,6 +2,8 @@
  * API client for ChemVision backend communication.
  */
 
+const REQUEST_TIMEOUT_MS = 30_000
+
 // Types matching backend schemas
 export interface StructureResponse {
   smiles: string
@@ -55,6 +57,23 @@ function getApiUrl(): string {
   }
   // Server-side: use internal Docker network or localhost
   return process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+}
+
+/**
+ * Create a fetch request with a timeout via AbortController.
+ */
+function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeoutMs: number = REQUEST_TIMEOUT_MS
+): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+  return fetch(url, {
+    ...options,
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeoutId))
 }
 
 /**
@@ -113,7 +132,7 @@ export const apiClient = {
    * Convert IUPAC chemical name to SMILES notation.
    */
   async nameToStructure(name: string): Promise<StructureResponse> {
-    const response = await fetch(`${getApiUrl()}/api/name-to-structure`, {
+    const response = await fetchWithTimeout(`${getApiUrl()}/api/name-to-structure`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -132,7 +151,7 @@ export const apiClient = {
    * Convert SMILES notation to IUPAC chemical name.
    */
   async structureToName(smiles: string): Promise<NameResponse> {
-    const response = await fetch(`${getApiUrl()}/api/structure-to-name`, {
+    const response = await fetchWithTimeout(`${getApiUrl()}/api/structure-to-name`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -154,7 +173,7 @@ export const apiClient = {
     const formData = new FormData()
     formData.append('image', file)
 
-    const response = await fetch(`${getApiUrl()}/api/image-to-structure`, {
+    const response = await fetchWithTimeout(`${getApiUrl()}/api/image-to-structure`, {
       method: 'POST',
       body: formData,
     })

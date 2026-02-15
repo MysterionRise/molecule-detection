@@ -1,10 +1,13 @@
 """Conversion endpoints for molecular structure and naming."""
 
 import uuid
+from collections.abc import Awaitable, Callable
+from typing import TypeVar
 
 import structlog
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 
+from app.core.config import settings
 from app.models.schemas import (
     ErrorResponse,
     NameResponse,
@@ -16,6 +19,12 @@ from app.services import naming, ocsr
 
 logger = structlog.get_logger()
 router = APIRouter()
+
+T = TypeVar("T")
+
+# Image magic bytes
+_PNG_MAGIC = b"\x89PNG"
+_JPEG_MAGIC = b"\xff\xd8"
 
 
 def _get_correlation_id() -> str:
@@ -43,6 +52,56 @@ def _not_implemented_error(operation: str) -> HTTPException:
     )
 
 
+async def _handle_conversion(
+    operation: str,
+    convert_fn: Callable[[], Awaitable[T] | T],
+    log_context: dict[str, str],
+) -> T:
+    """Shared error handling for conversion endpoints.
+
+    Args:
+        operation: Human-readable operation name for error messages.
+        convert_fn: Callable that performs the conversion and returns a result or None.
+        log_context: Additional context for structured logging.
+    """
+    try:
+        result = convert_fn()
+        if isinstance(result, Awaitable):
+            result = await result
+
+        if result is None:
+            raise _not_implemented_error(operation)
+
+        logger.info(f"{operation}_success", **log_context)
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"{operation}_error", **log_context, error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error_code": "CONVERSION_ERROR",
+                "message": f"Failed to perform {operation}: {str(e)}",
+                "correlation_id": _get_correlation_id(),
+            },
+        ) from e
+
+
+def _validate_image_magic_bytes(image_bytes: bytes) -> None:
+    """Validate that image bytes match expected magic bytes for PNG or JPEG."""
+    if not (image_bytes[:4] == _PNG_MAGIC or image_bytes[:2] == _JPEG_MAGIC):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error_code": "INVALID_IMAGE_DATA",
+                "message": "File content does not match a valid PNG or JPEG image",
+                "correlation_id": _get_correlation_id(),
+            },
+        )
+
+
 @router.post(
     "/name-to-structure",
     response_model=StructureResponse,
@@ -59,28 +118,13 @@ async def name_to_structure(request: NameToStructureRequest) -> StructureRespons
     """
     logger.info("name_to_structure_request", name=request.name)
 
-    try:
-        smiles = naming.name_to_smiles(request.name)
+    smiles = await _handle_conversion(
+        operation="name_to_structure",
+        convert_fn=lambda: naming.name_to_smiles(request.name),
+        log_context={"name": request.name},
+    )
 
-        if smiles is None:
-            raise _not_implemented_error("Name to structure conversion")
-
-        logger.info("name_to_structure_success", name=request.name, smiles=smiles)
-
-        return StructureResponse(smiles=smiles, source="demo")
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("name_to_structure_error", name=request.name, error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "error_code": "CONVERSION_ERROR",
-                "message": f"Failed to convert name to structure: {str(e)}",
-                "correlation_id": _get_correlation_id(),
-            },
-        ) from e
+    return StructureResponse(smiles=smiles, source="demo")
 
 
 @router.post(
@@ -99,28 +143,13 @@ async def structure_to_name(request: StructureToNameRequest) -> NameResponse:
     """
     logger.info("structure_to_name_request", smiles=request.smiles)
 
-    try:
-        name = naming.smiles_to_name(request.smiles)
+    name = await _handle_conversion(
+        operation="structure_to_name",
+        convert_fn=lambda: naming.smiles_to_name(request.smiles),
+        log_context={"smiles": request.smiles},
+    )
 
-        if name is None:
-            raise _not_implemented_error("Structure to name conversion")
-
-        logger.info("structure_to_name_success", smiles=request.smiles, name=name)
-
-        return NameResponse(name=name, source="ml")
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("structure_to_name_error", smiles=request.smiles, error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "error_code": "CONVERSION_ERROR",
-                "message": f"Failed to convert structure to name: {str(e)}",
-                "correlation_id": _get_correlation_id(),
-            },
-        ) from e
+    return NameResponse(name=name, source="ml")
 
 
 @router.post(
@@ -152,27 +181,26 @@ async def image_to_structure(image: UploadFile = File(...)) -> StructureResponse
             },
         )
 
-    try:
-        image_bytes = await image.read()
+    image_bytes = await image.read()
 
-        smiles = ocsr.image_to_smiles(image_bytes)
-
-        if smiles is None:
-            raise _not_implemented_error("Image to structure conversion (OCSR)")
-
-        logger.info("image_to_structure_success", filename=image.filename, smiles=smiles)
-
-        return StructureResponse(smiles=smiles, source="ml")
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("image_to_structure_error", filename=image.filename, error=str(e))
+    # Enforce upload size limit
+    if len(image_bytes) > settings.max_upload_size:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail={
-                "error_code": "CONVERSION_ERROR",
-                "message": f"Failed to convert image to structure: {str(e)}",
+                "error_code": "FILE_TOO_LARGE",
+                "message": f"Image exceeds maximum upload size of {settings.max_upload_size} bytes",
                 "correlation_id": _get_correlation_id(),
             },
-        ) from e
+        )
+
+    # Validate magic bytes match actual image format
+    _validate_image_magic_bytes(image_bytes)
+
+    smiles = await _handle_conversion(
+        operation="image_to_structure",
+        convert_fn=lambda: ocsr.image_to_smiles(image_bytes),
+        log_context={"filename": image.filename or "unknown"},
+    )
+
+    return StructureResponse(smiles=smiles, source="ml")

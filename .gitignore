@@ -3,3 +3,6 @@
 
 *.iml
 target
+
+# npm lockfiles (project uses pnpm)
+package-lock.json

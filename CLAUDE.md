@@ -19,6 +19,7 @@ chemvision/
 ├── backend/       # FastAPI (Python 3.11+, Pydantic v2, structlog)
 ├── ml/            # ML training code (placeholder for Phase 2+)
 ├── ops/           # Docker Compose configuration
+├── docs/          # Project documentation (gap analysis, etc.)
 └── ADRs/          # Architecture Decision Records
 ```
 
@@ -33,7 +34,10 @@ make lint     # Run all linters (ruff, mypy, eslint)
 make fmt      # Format all code (ruff format, prettier)
 make build    # Build Docker images
 make clean    # Clean up containers and artifacts
+make install  # Install dependencies locally (pip + pnpm)
 ```
+
+Run `./ci-check.sh` before pushing to validate all CI checks locally.
 
 ### Running Tests Individually
 
@@ -41,7 +45,7 @@ make clean    # Clean up containers and artifacts
 ```bash
 cd chemvision/backend
 pytest -v --cov=app --cov-report=term-missing
-pytest tests/test_convert_endpoints.py -v  # Single test file
+pytest app/tests/test_convert_endpoints.py -v  # Single test file
 ```
 
 **Frontend:**
@@ -64,7 +68,9 @@ pnpm test:ui     # Vitest UI
 ### Frontend (Next.js)
 - **Entry point**: `frontend/app/page.tsx` - Main tabbed interface
 - **Forms**: `frontend/components/forms/` - One form per conversion type
+- **Results**: `frontend/components/results/ResultCard.tsx` - Result display with copy/download
 - **UI Components**: `frontend/components/ui/` - shadcn/ui base components
+- **API Client**: `frontend/lib/api.ts` - API client with `ApiError` class
 - **Path alias**: `@/*` maps to project root
 
 ### API Endpoints
@@ -86,11 +92,9 @@ All errors follow this structure:
 
 ## Code Quality Standards
 
-- **Backend**: 85%+ test coverage, strict mypy type checking, ruff linting
+- **Backend**: 80%+ test coverage, strict mypy type checking, ruff linting
 - **Frontend**: ESLint (next/core-web-vitals), Prettier formatting
 - **Pre-commit hooks**: Configured in `.pre-commit-config.yaml`
-
-Run `./ci-check.sh` before pushing to validate all CI checks locally.
 
 ## Key Configuration Files
 
@@ -98,3 +102,7 @@ Run `./ci-check.sh` before pushing to validate all CI checks locally.
 - `chemvision/ADRs/` - Read for architectural context
 - `chemvision/ops/docker-compose.yml` - Local development setup
 - `.github/workflows/ci.yml` - CI pipeline definition
+- `chemvision/commitlint.config.js` - Conventional commits enforcement
+- `chemvision/CONTRIBUTING.md` - Contribution guidelines
+- `chemvision/SECURITY.md` - Security policy
+- `chemvision/CI-CHECKLIST.md` - CI verification checklist

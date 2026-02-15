@@ -119,6 +119,54 @@ class TestImageToStructure:
         assert error["error_code"] == "INVALID_IMAGE_TYPE"
 
 
+    def test_file_too_large_returns_413(self, client: TestClient) -> None:
+        """Test that files exceeding max upload size return 413."""
+        # Create a PNG that exceeds 10MB (the default max_upload_size)
+        png_header = (
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+            b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89"
+        )
+        oversized_bytes = png_header + b"\x00" * (10 * 1024 * 1024 + 1)
+
+        response = client.post(
+            "/api/image-to-structure",
+            files={"image": ("big.png", oversized_bytes, "image/png")},
+        )
+
+        assert response.status_code == 413
+        data = response.json()
+        assert "detail" in data
+        error = data["detail"]
+        assert error["error_code"] == "FILE_TOO_LARGE"
+
+    def test_spoofed_content_type_returns_400(self, client: TestClient) -> None:
+        """Test that files with spoofed content-type (wrong magic bytes) are rejected."""
+        # Send a text file claiming to be image/png
+        response = client.post(
+            "/api/image-to-structure",
+            files={"image": ("fake.png", b"this is not a real image", "image/png")},
+        )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert "detail" in data
+        error = data["detail"]
+        assert error["error_code"] == "INVALID_IMAGE_DATA"
+
+    def test_valid_jpeg_magic_bytes(self, client: TestClient) -> None:
+        """Test that valid JPEG magic bytes are accepted."""
+        # Minimal JPEG-like bytes (will still get 501 since OCSR is not implemented)
+        jpeg_bytes = b"\xff\xd8\xff\xe0" + b"\x00" * 100
+
+        response = client.post(
+            "/api/image-to-structure",
+            files={"image": ("test.jpg", jpeg_bytes, "image/jpeg")},
+        )
+
+        # Should pass validation and hit 501 (not implemented)
+        assert response.status_code == 501
+
+
 class TestCorrelationId:
     """Tests for correlation ID handling."""
 
