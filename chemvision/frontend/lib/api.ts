@@ -85,8 +85,21 @@ async function parseErrorResponse(response: Response): Promise<ApiError> {
   try {
     const data = await response.json()
 
+    // Handle validation errors (422) — FastAPI returns {"detail": [{loc, msg, type}, ...]}
+    if (response.status === 422 && Array.isArray(data.detail)) {
+      const validationErrors = data.detail
+        .map((e: { msg: string }) => e.msg)
+        .join(', ')
+      return new ApiError(
+        validationErrors || 'Validation error',
+        'VALIDATION_ERROR',
+        correlationId,
+        response.status
+      )
+    }
+
     // Handle FastAPI's HTTPException format (wrapped in "detail")
-    if (data.detail && typeof data.detail === 'object') {
+    if (data.detail && typeof data.detail === 'object' && !Array.isArray(data.detail)) {
       const detail = data.detail as ErrorDetail
       return new ApiError(
         detail.message || 'An error occurred',
@@ -97,12 +110,15 @@ async function parseErrorResponse(response: Response): Promise<ApiError> {
       )
     }
 
-    // Handle validation errors (422)
-    if (response.status === 422 && data.detail) {
-      const validationErrors = Array.isArray(data.detail)
-        ? data.detail.map((e: { msg: string }) => e.msg).join(', ')
-        : 'Validation error'
-      return new ApiError(validationErrors, 'VALIDATION_ERROR', correlationId, response.status)
+    // Handle global exception handler format (no "detail" wrapper)
+    if (data.error_code && data.message) {
+      return new ApiError(
+        data.message,
+        data.error_code,
+        data.correlation_id || correlationId,
+        response.status,
+        data.details || null
+      )
     }
 
     // Fallback for other error formats

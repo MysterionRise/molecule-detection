@@ -3,7 +3,7 @@
 # CI Check Script - Simulates GitHub Actions CI workflow locally
 # This script runs the same checks that will run in CI
 
-set -e  # Exit on error
+set +e  # Continue on error — failures tracked via FAILED counter
 
 # Color codes
 GREEN='\033[0;32m'

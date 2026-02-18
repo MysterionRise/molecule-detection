@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -26,7 +24,7 @@ services:
     build:
       context: ../frontend
       dockerfile: Dockerfile
-      target: builder
+      target: deps
     ports:
       - "3000:3000"
     environment:
@@ -38,7 +36,8 @@ services:
       - /app/.next
     command: sh -c "corepack enable pnpm && pnpm dev"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - chemvision
 

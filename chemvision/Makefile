@@ -12,13 +12,13 @@ help:
 	@echo "make install    - Install dependencies locally"
 
 dev:
-	docker-compose -f ops/docker-compose.yml up --build
+	docker compose -f ops/docker-compose.yml up --build
 
 test:
 	@echo "Running backend tests..."
 	cd backend && pytest -v --cov=app --cov-report=term-missing
 	@echo "\nRunning frontend tests..."
-	cd frontend && pnpm test
+	cd frontend && pnpm test:run
 
 fmt:
 	@echo "Formatting backend..."
@@ -33,10 +33,10 @@ lint:
 	cd frontend && pnpm lint
 
 build:
-	docker-compose -f ops/docker-compose.yml build
+	docker compose -f ops/docker-compose.yml build
 
 clean:
-	docker-compose -f ops/docker-compose.yml down -v
+	docker compose -f ops/docker-compose.yml down -v
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true

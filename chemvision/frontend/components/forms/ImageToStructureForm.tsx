@@ -17,8 +17,9 @@ export function ImageToStructureForm() {
   const [dragActive, setDragActive] = useState(false)
 
   const handleFileSelect = useCallback((file: File) => {
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
+    // Validate file type — match backend's accepted MIME types
+    const ACCEPTED_TYPES = ['image/png', 'image/jpeg']
+    if (!ACCEPTED_TYPES.includes(file.type)) {
       setError('Please select a valid image file (PNG or JPEG)')
       return
     }
