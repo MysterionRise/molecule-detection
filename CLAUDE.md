@@ -19,8 +19,10 @@ chemvision/
 ├── backend/       # FastAPI (Python 3.11+, Pydantic v2, structlog)
 ├── ml/            # ML training code (placeholder for Phase 2+)
 ├── ops/           # Docker Compose configuration
-├── docs/          # Project documentation (gap analysis, etc.)
-└── ADRs/          # Architecture Decision Records
+├── docs/          # Project documentation (GAP_ANALYSIS.md, etc.)
+├── ADRs/          # Architecture Decision Records (0001–0004)
+├── .github/       # CI workflows, Dependabot config, CI.md
+└── SECURITY.md    # Security policy and vulnerability reporting
 ```
 
 ## Development Commands
@@ -37,7 +39,7 @@ make clean    # Clean up containers and artifacts
 make install  # Install dependencies locally (pip + pnpm)
 ```
 
-Run `./ci-check.sh` before pushing to validate all CI checks locally.
+Run `./ci-check.sh` before pushing to validate all CI checks locally. There is also `./run-tests.sh` for running tests specifically.
 
 ### Running Tests Individually
 
@@ -56,6 +58,12 @@ pnpm test --run  # Single run
 pnpm test:ui     # Vitest UI
 ```
 
+### Testing Standards
+
+- **Backend**: 80%+ coverage enforced via `pytest.ini` (currently 92%+). 8 test files covering endpoints, services, config, and error handling. Uses pytest-asyncio (`asyncio_mode = "auto"`).
+- **Frontend**: 80%+ coverage enforced via vitest thresholds (lines, branches, functions, statements). Tests cover all form components, ResultCard, API client, and main page. Uses @testing-library/react and jsdom.
+- **ADR 0004** (`ADRs/0004-testing-strategy.md`) documents the full testing strategy.
+
 ## Architecture
 
 ### Backend (FastAPI)
@@ -63,15 +71,19 @@ pnpm test:ui     # Vitest UI
 - **Routers**: `backend/app/routers/convert.py` - Three conversion endpoints
 - **Services**: `backend/app/services/` - Business logic (naming.py, ocsr.py)
 - **Schemas**: `backend/app/models/schemas.py` - Pydantic request/response models
-- **Config**: `backend/app/core/config.py` - Environment-based settings
+- **Config**: `backend/app/core/config.py` - Environment-based settings via pydantic-settings
+- **Middleware**: Correlation ID tracking via structlog context vars
+- **Image validation**: Magic bytes check for PNG/JPEG; configurable upload size limit (`settings.max_upload_size`, default 10MB)
+- **CORS**: Configured via `settings.cors_origins` (JSON array from environment)
 
 ### Frontend (Next.js)
 - **Entry point**: `frontend/app/page.tsx` - Main tabbed interface
-- **Forms**: `frontend/components/forms/` - One form per conversion type
+- **Forms**: `frontend/components/forms/` - One form per conversion type (React Hook Form + Zod validation)
 - **Results**: `frontend/components/results/ResultCard.tsx` - Result display with copy/download
-- **UI Components**: `frontend/components/ui/` - shadcn/ui base components
+- **UI Components**: `frontend/components/ui/` - shadcn/ui base components (Tailwind Merge, CVA, Lucide React icons)
 - **API Client**: `frontend/lib/api.ts` - API client with `ApiError` class
 - **Path alias**: `@/*` maps to project root
+- **Test setup**: `frontend/tests/setup.ts` - Testing Library configuration
 
 ### API Endpoints
 - `POST /api/name-to-structure` - IUPAC name → SMILES
@@ -92,17 +104,31 @@ All errors follow this structure:
 
 ## Code Quality Standards
 
-- **Backend**: 80%+ test coverage, strict mypy type checking, ruff linting
-- **Frontend**: ESLint (next/core-web-vitals), Prettier formatting
+- **Backend**: 80%+ test coverage, strict mypy type checking (with Pydantic plugin), ruff linting
+- **Frontend**: ESLint (next/core-web-vitals + TypeScript + JSX a11y), Prettier formatting, strict TypeScript
 - **Pre-commit hooks**: Configured in `.pre-commit-config.yaml`
+
+## Security
+
+- **SECURITY.md**: Vulnerability reporting procedures and security measures
+- **Bandit**: SAST scanning for Python code
+- **detect-secrets**: Pre-commit hook with `.secrets.baseline`
+- **Dependency auditing**: `pip-audit` (Python) and `pnpm audit` (Node.js)
+- **Trivy**: Container image scanning
+- **Docker**: Non-root user in backend container
+- **Dependabot**: Weekly updates for pip, npm, Docker, and GitHub Actions (`.github/dependabot.yml`)
 
 ## Key Configuration Files
 
 - `chemvision/Makefile` - Development commands
-- `chemvision/ADRs/` - Read for architectural context
+- `chemvision/ADRs/` - Architecture Decision Records (0001–0004)
 - `chemvision/ops/docker-compose.yml` - Local development setup
 - `.github/workflows/ci.yml` - CI pipeline definition
+- `.github/CI.md` - Detailed CI workflow documentation
 - `chemvision/commitlint.config.js` - Conventional commits enforcement
 - `chemvision/CONTRIBUTING.md` - Contribution guidelines
 - `chemvision/SECURITY.md` - Security policy
 - `chemvision/CI-CHECKLIST.md` - CI verification checklist
+- `chemvision/CODEOWNERS` - Code ownership rules
+- `chemvision/.editorconfig` - Editor configuration
+- `chemvision/docs/GAP_ANALYSIS.md` - Architecture improvements documentation

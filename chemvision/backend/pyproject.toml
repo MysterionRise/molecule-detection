@@ -21,6 +21,7 @@ dependencies = [
     "python-multipart>=0.0.6",
     "structlog>=24.1.0",
     "python-json-logger>=2.0.7",
+    "slowapi>=0.1.9",
 ]
 
 [project.optional-dependencies]

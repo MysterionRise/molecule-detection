@@ -10,7 +10,7 @@ services:
     environment:
       - ENVIRONMENT=development
       - LOG_LEVEL=INFO
-      - CORS_ORIGINS=http://localhost:3000,http://frontend:3000
+      - CORS_ORIGINS=["http://localhost:3000","http://frontend:3000"]
     volumes:
       - ../backend/app:/app/app
     healthcheck:

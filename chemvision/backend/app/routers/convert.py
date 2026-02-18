@@ -5,9 +5,10 @@ from collections.abc import Awaitable, Callable
 from typing import TypeVar
 
 import structlog
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile, status
 
 from app.core.config import settings
+from app.core.rate_limit import limiter
 from app.models.schemas import (
     ErrorResponse,
     NameResponse,
@@ -83,7 +84,7 @@ async def _handle_conversion(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
                 "error_code": "CONVERSION_ERROR",
-                "message": f"Failed to perform {operation}: {str(e)}",
+                "message": f"Failed to perform {operation}",
                 "correlation_id": _get_correlation_id(),
             },
         ) from e
@@ -159,7 +160,8 @@ async def structure_to_name(request: StructureToNameRequest) -> NameResponse:
         501: {"model": ErrorResponse, "description": "Not implemented"},
     },
 )
-async def image_to_structure(image: UploadFile = File(...)) -> StructureResponse:
+@limiter.limit("10/minute")
+async def image_to_structure(request: Request, image: UploadFile = File(...)) -> StructureResponse:
     """
     Extract SMILES notation from a molecular structure image (OCSR).
 
@@ -181,18 +183,25 @@ async def image_to_structure(image: UploadFile = File(...)) -> StructureResponse
             },
         )
 
-    image_bytes = await image.read()
-
-    # Enforce upload size limit
-    if len(image_bytes) > settings.max_upload_size:
-        raise HTTPException(
-            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
-            detail={
-                "error_code": "FILE_TOO_LARGE",
-                "message": f"Image exceeds maximum upload size of {settings.max_upload_size} bytes",
-                "correlation_id": _get_correlation_id(),
-            },
-        )
+    # Enforce upload size limit via chunked read to prevent memory exhaustion
+    chunks: list[bytes] = []
+    total_size = 0
+    while True:
+        chunk = await image.read(64 * 1024)  # 64KB chunks
+        if not chunk:
+            break
+        total_size += len(chunk)
+        if total_size > settings.max_upload_size:
+            raise HTTPException(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                detail={
+                    "error_code": "FILE_TOO_LARGE",
+                    "message": f"Image exceeds maximum upload size of {settings.max_upload_size} bytes",
+                    "correlation_id": _get_correlation_id(),
+                },
+            )
+        chunks.append(chunk)
+    image_bytes = b"".join(chunks)
 
     # Validate magic bytes match actual image format
     _validate_image_magic_bytes(image_bytes)
